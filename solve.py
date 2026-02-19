@@ -98,7 +98,7 @@ def main():
             feasible_hubs = [h for h in hubs if (s, h, p) in x]
             if feasible_hubs:  # Only add constraint if there are feasible hubs
                 model.addConstr(gp.quicksum(x[s, h, p] for h in feasible_hubs) <= 1,
-                               name=f"single_assignment_{s}_{p}")
+                               name=f"single_assignment_{s}_{p}", lazy=1)
 
     # Symmetry breaking: order new hubs to eliminate symmetric solutions
     new_hubs_sorted = sorted(new_hubs, key=lambda h: int(h[1:]))
