@@ -117,10 +117,9 @@ def main():
     print("[3/3] Solving...")
     print("-" * 60)
 
-    # Set decomposition hints: partition by hub
+    # Set decomposition hints: y variables go to master problem due to coupling
     for h in new_hubs:
-        hub_id = int(h[1:])  # Extract numeric ID from "h1", "h2", etc.
-        y[h].Partition = hub_id
+        y[h].Partition = -1  # Master problem handles hub opening decisions
     
     for (s, h, p) in x:
         hub_id = int(h[1:])
