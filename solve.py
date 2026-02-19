@@ -103,6 +103,13 @@ def main():
             if feasible_hubs:  # Only add constraint if there are feasible hubs for this s,p
                 model.addConstr(gp.quicksum(x[s, h, p] for h in feasible_hubs) <= 1,
                                name=f"single_assignment_{s}_{p}")
+                
+                # Symmetry breaking: order assignment variables by hub ID for each (s,p) pair
+                if len(feasible_hubs) > 1:
+                    sorted_hubs = sorted(feasible_hubs, key=lambda h: int(h[1:]))
+                    for i in range(len(sorted_hubs) - 1):
+                        model.addConstr(x[s, sorted_hubs[i], p] >= x[s, sorted_hubs[i+1], p],
+                                       name=f"assign_sym_break_{s}_{p}_{i}")
 
     print(f"      Variables: {model.NumVars:,}")
     print(f"      Constraints: {model.NumConstrs:,}")
