@@ -109,6 +109,15 @@ def main():
     print("[3/3] Solving...")
     print("-" * 60)
 
+    # Set decomposition hints: partition by hub
+    for h in hubs:
+        hub_id = int(h[1:])  # Extract numeric ID from "h1", "h2", etc.
+        y[h].Partition = hub_id
+    
+    for (s, h, p) in x:
+        hub_id = int(h[1:])
+        x[s, h, p].Partition = hub_id
+    
     start_time = time.time()
     model.optimize()
     solve_time = time.time() - start_time
