@@ -65,12 +65,6 @@ def main():
                 if feasibility[s][h][p] == 1:
                     x[s, h, p] = model.addVar(vtype=gp.GRB.BINARY, name=f"x_{s}_{h}_{p}")
 
-    # Decomposition hint: Set branching priorities to resolve hub decisions first
-    # Hub opening decisions (y) have higher priority than assignments (x)
-    for h in hubs:
-        y[h].BranchPriority = 10
-    # Assignment variables keep default priority (0)
-
     # Objective: Maximize total covered demand via hubs
     objective = gp.quicksum(demand[s][p] * x[s, h, p]
                            for s in junctions for h in hubs for p in pois
