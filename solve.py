@@ -106,6 +106,17 @@ def main():
         model.addConstr(y[new_hubs_sorted[i]] >= y[new_hubs_sorted[i+1]], 
                        name=f"sym_break_hubs_{i}")
 
+    # Assignment symmetry breaking: prefer lower-indexed new hubs
+    for s in junctions:
+        for p in pois:
+            feasible_new_hubs = [h for h in new_hubs if (s, h, p) in x]
+            if len(feasible_new_hubs) > 1:
+                feasible_new_hubs_sorted = sorted(feasible_new_hubs, key=lambda h: int(h[1:]))
+                for i in range(len(feasible_new_hubs_sorted) - 1):
+                    h1, h2 = feasible_new_hubs_sorted[i], feasible_new_hubs_sorted[i+1]
+                    model.addConstr(x[s, h2, p] <= 1 - y[h1],
+                                   name=f"assign_sym_{s}_{p}_{i}")
+
     print(f"      Variables: {model.NumVars:,}")
     print(f"      Constraints: {model.NumConstrs:,}")
     print(f"      Binary variables: {model.NumBinVars:,}")
