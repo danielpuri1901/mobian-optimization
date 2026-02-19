@@ -117,14 +117,14 @@ def main():
     print("[3/3] Solving...")
     print("-" * 60)
 
-    # Set decomposition hints: partition by hub with consecutive IDs
-    hub_to_partition = {h: i for i, h in enumerate(hubs)}
-    
+    # Set decomposition hints: partition by hub
     for h in new_hubs:
-        y[h].Partition = hub_to_partition[h]
+        hub_id = int(h[1:])  # Extract numeric ID from "h1", "h2", etc.
+        y[h].Partition = hub_id
     
     for (s, h, p) in x:
-        x[s, h, p].Partition = hub_to_partition[h]
+        hub_id = int(h[1:])
+        x[s, h, p].Partition = hub_id
     
     start_time = time.time()
     model.optimize()
