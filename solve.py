@@ -55,6 +55,8 @@ def main():
     y = {}
     for h in hubs:
         y[h] = model.addVar(vtype=gp.GRB.BINARY, name=f"y_{h}")
+        # High priority for hub opening decisions - these drive the problem structure
+        y[h].BranchPriority = 100
 
     # Variables: x_{shp} = 1 if demand from junction s to POI p is assigned via hub h
     # Only create variables for feasible assignments
