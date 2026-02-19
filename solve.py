@@ -109,8 +109,6 @@ def main():
     solve_time = time.time() - start_time
 
     print("-" * 60)
-    # Gurobi params (auto-tuned by GurobiAgent)
-    model.setParam("MIPFocus", 1)
     print()
 
     # Results
