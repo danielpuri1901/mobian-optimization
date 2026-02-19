@@ -73,7 +73,7 @@ def main():
 
     # Constraint 1: Limit the number of new hubs opened
     # Hub IDs are like "h1", "h2", etc. - extract number to determine if existing
-    new_hubs = [h for h in hubs if int(h[1:]) > num_existing_hubs]
+    new_hubs = sorted([h for h in hubs if int(h[1:]) > num_existing_hubs], key=lambda h: int(h[1:]))
     existing_hubs = [h for h in hubs if int(h[1:]) <= num_existing_hubs]
 
     model.addConstr(gp.quicksum(y[h] for h in new_hubs) <= max_new_hubs,
