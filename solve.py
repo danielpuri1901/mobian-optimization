@@ -50,9 +50,6 @@ def main():
     # Build model
     print("[2/3] Building optimization model...")
     model = gp.Model("Mobian_HubLocation")
-    
-    # Enable decomposition to exploit block structure
-    model.setParam("DecomposeMethod", 1)
 
     # Variables: y_h = 1 if hub h is opened
     y = {}
