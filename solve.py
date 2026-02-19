@@ -109,8 +109,6 @@ def main():
     print(f"      Binary variables: {model.NumBinVars:,}")
     print()
 
-    # Gurobi params (auto-tuned by GurobiAgent)
-    model.setParam("Presolve", 2)
     # Solve
     print("[3/3] Solving...")
     print("-" * 60)
