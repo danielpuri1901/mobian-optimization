@@ -94,7 +94,7 @@ def main():
         for h in hubs:
             for p in pois:
                 if (s, h, p) in x:
-                    model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}", lazy=1)
+                    model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
 
     # Constraint 4: Feasibility constraints eliminated - only feasible variables created
 
