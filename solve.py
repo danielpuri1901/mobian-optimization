@@ -57,15 +57,19 @@ def main():
         y[h] = model.addVar(vtype=gp.GRB.BINARY, name=f"y_{h}")
 
     # Variables: x_{shp} = 1 if demand from junction s to POI p is assigned via hub h
+    # Only create variables for feasible assignments
     x = {}
+    feasible_assignments = []
     for s in junctions:
         for h in hubs:
             for p in pois:
-                x[s, h, p] = model.addVar(vtype=gp.GRB.BINARY, name=f"x_{s}_{h}_{p}")
+                if feasibility[s][h][p] > 0:  # Only create if feasible
+                    x[s, h, p] = model.addVar(vtype=gp.GRB.BINARY, name=f"x_{s}_{h}_{p}")
+                    feasible_assignments.append((s, h, p))
 
     # Objective: Maximize total covered demand via hubs
     objective = gp.quicksum(demand[s][p] * x[s, h, p]
-                           for s in junctions for h in hubs for p in pois)
+                           for s, h, p in feasible_assignments)
     model.setObjective(objective, gp.GRB.MAXIMIZE)
 
     # Constraint 1: Limit the number of new hubs opened
@@ -81,23 +85,18 @@ def main():
                    name="existing_hubs_open")
 
     # Constraint 3: Demand can only be assigned if hub h is open
-    for s in junctions:
-        for h in hubs:
-            for p in pois:
-                model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
+    for s, h, p in feasible_assignments:
+        model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
 
-    # Constraint 4: Prevent infeasible assignments (based on time/distance constraints)
-    for s in junctions:
-        for h in hubs:
-            for p in pois:
-                model.addConstr(x[s, h, p] <= feasibility[s][h][p],
-                               name=f"feasibility_{s}_{h}_{p}")
+    # Constraint 4: Feasibility constraints no longer needed - variables only created for feasible assignments
 
     # Constraint 5: Each demand from s to p can be assigned to at most one hub
     for s in junctions:
         for p in pois:
-            model.addConstr(gp.quicksum(x[s, h, p] for h in hubs) <= 1,
-                           name=f"single_assignment_{s}_{p}")
+            feasible_hubs = [h for h in hubs if (s, h, p) in x]
+            if feasible_hubs:  # Only add constraint if there are feasible hubs for this s,p
+                model.addConstr(gp.quicksum(x[s, h, p] for h in feasible_hubs) <= 1,
+                               name=f"single_assignment_{s}_{p}")
 
     print(f"      Variables: {model.NumVars:,}")
     print(f"      Constraints: {model.NumConstrs:,}")
