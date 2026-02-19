@@ -55,6 +55,7 @@ def main():
     y = {}
     for h in hubs:
         y[h] = model.addVar(vtype=gp.GRB.BINARY, name=f"y_{h}")
+        y[h].Partition = 1  # Master variables for Benders decomposition
 
     # Variables: x_{shp} = 1 if demand from junction s to POI p is assigned via hub h
     # Only create variables for feasible assignments
@@ -65,6 +66,7 @@ def main():
             for p in pois:
                 if feasibility[s][h][p] > 0:  # Only create if feasible
                     x[s, h, p] = model.addVar(vtype=gp.GRB.BINARY, name=f"x_{s}_{h}_{p}")
+                    x[s, h, p].Partition = 0  # Subproblem variables for Benders decomposition
                     feasible_assignments.append((s, h, p))
 
     # Objective: Maximize total covered demand via hubs
