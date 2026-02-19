@@ -51,9 +51,13 @@ def main():
     print("[2/3] Building optimization model...")
     model = gp.Model("Mobian_HubLocation")
 
-    # Variables: y_h = 1 if hub h is opened
+    # Variables: y_h = 1 if hub h is opened (only for new hubs)
+    # Existing hubs are implicitly fixed to 1
+    new_hubs = [h for h in hubs if int(h[1:]) > num_existing_hubs]
+    existing_hubs = [h for h in hubs if int(h[1:]) <= num_existing_hubs]
+    
     y = {}
-    for h in hubs:
+    for h in new_hubs:
         y[h] = model.addVar(vtype=gp.GRB.BINARY, name=f"y_{h}")
 
     # Variables: x_{shp} = 1 if demand from junction s to POI p is assigned via hub h
@@ -72,23 +76,19 @@ def main():
     model.setObjective(objective, gp.GRB.MAXIMIZE)
 
     # Constraint 1: Limit the number of new hubs opened
-    # Hub IDs are like "h1", "h2", etc. - extract number to determine if existing
-    new_hubs = [h for h in hubs if int(h[1:]) > num_existing_hubs]
-    existing_hubs = [h for h in hubs if int(h[1:]) <= num_existing_hubs]
-
     model.addConstr(gp.quicksum(y[h] for h in new_hubs) <= max_new_hubs,
                    name="max_new_hubs")
-
-    # Constraint 2: Ensure all existing hubs are open
-    model.addConstr(gp.quicksum(y[h] for h in existing_hubs) == num_existing_hubs,
-                   name="existing_hubs_open")
+    
+    # Constraint 2: Existing hubs are implicitly fixed to 1 (no constraint needed)
 
     # Constraint 3: Demand can only be assigned if hub h is open
     for s in junctions:
         for h in hubs:
             for p in pois:
                 if (s, h, p) in x:
-                    model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
+                    if h in new_hubs:
+                        model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
+                    # For existing hubs, constraint is x[s,h,p] <= 1 which is always satisfied
 
     # Constraint 4: Feasibility constraints now handled by variable creation
 
@@ -118,7 +118,7 @@ def main():
     print("-" * 60)
 
     # Set decomposition hints: partition by hub
-    for h in hubs:
+    for h in new_hubs:
         hub_id = int(h[1:])  # Extract numeric ID from "h1", "h2", etc.
         y[h].Partition = hub_id
     
