@@ -99,19 +99,6 @@ def main():
             if feasible_hubs:  # Only add constraint if there are feasible hubs
                 model.addConstr(gp.quicksum(x[s, h, p] for h in feasible_hubs) <= 1,
                                name=f"single_assignment_{s}_{p}")
-                
-    # Additional symmetry breaking: prefer lower-indexed hubs for assignments
-    for s in junctions:
-        for p in pois:
-            feasible_hubs = [h for h in hubs if (s, h, p) in x]
-            if len(feasible_hubs) > 1:
-                feasible_hubs_sorted = sorted(feasible_hubs, key=lambda h: int(h[1:]))
-                for i in range(len(feasible_hubs_sorted) - 1):
-                    h1, h2 = feasible_hubs_sorted[i], feasible_hubs_sorted[i+1]
-                    # If higher-indexed hub h2 is used, lower-indexed hub h1 must be open (if it's new)
-                    if h1 in new_hubs:
-                        model.addConstr(x[s, h2, p] <= y[h1], 
-                                       name=f"assign_order_{s}_{h1}_{h2}_{p}")
 
     # Symmetry breaking: order new hubs to eliminate symmetric solutions
     new_hubs_sorted = sorted(new_hubs, key=lambda h: int(h[1:]))
