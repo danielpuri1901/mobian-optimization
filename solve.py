@@ -64,7 +64,7 @@ def main():
         for h in hubs:
             for p in pois:
                 if feasibility[s][h][p] > 0:  # Only create if feasible
-                    x[s, h, p] = model.addVar(vtype=gp.GRB.CONTINUOUS, lb=0, ub=1, name=f"x_{s}_{h}_{p}")
+                    x[s, h, p] = model.addVar(vtype=gp.GRB.BINARY, name=f"x_{s}_{h}_{p}")
                     feasible_assignments.append((s, h, p))
 
     # Objective: Maximize total covered demand via hubs
