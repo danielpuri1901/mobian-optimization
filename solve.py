@@ -51,9 +51,9 @@ def main():
     print("[2/3] Building optimization model...")
     model = gp.Model("Mobian_HubLocation")
 
-    # Variables: y_h = 1 if hub h is opened (only for new hubs, existing hubs are implicitly open)
+    # Variables: y_h = 1 if hub h is opened
     y = {}
-    for h in new_hubs:
+    for h in hubs:
         y[h] = model.addVar(vtype=gp.GRB.BINARY, name=f"y_{h}")
 
     # Variables: x_{shp} = 1 if demand from junction s to POI p is assigned via hub h
@@ -79,11 +79,13 @@ def main():
     model.addConstr(gp.quicksum(y[h] for h in new_hubs) <= max_new_hubs,
                    name="max_new_hubs")
 
-    # Constraint 2: Existing hubs are implicitly open (no constraint needed)
+    # Constraint 2: Ensure all existing hubs are open
+    model.addConstr(gp.quicksum(y[h] for h in existing_hubs) == num_existing_hubs,
+                   name="existing_hubs_open")
 
-    # Constraint 3: Demand can only be assigned if hub h is open (only needed for new hubs)
+    # Constraint 3: Demand can only be assigned if hub h is open
     for s in junctions:
-        for h in new_hubs:  # Only for new hubs - existing hubs are always open
+        for h in hubs:
             for p in pois:
                 if (s, h, p) in x:
                     model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
