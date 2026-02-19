@@ -113,10 +113,6 @@ def main():
     print("[3/3] Solving...")
     print("-" * 60)
 
-    # Enable Benders decomposition for facility location structure
-    model.Params.Method = 3  # Benders decomposition
-    model.Params.DecompositionMethod = 1  # Automatic decomposition
-    
     start_time = time.time()
     model.optimize()
     solve_time = time.time() - start_time
