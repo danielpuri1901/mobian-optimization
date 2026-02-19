@@ -62,19 +62,6 @@ def main():
         for p in pois:
             z[s, p] = model.addVar(vtype=gp.GRB.BINARY, name=f"z_{s}_{p}")
 
-    # POI symmetry breaking: if POIs have identical demand/feasibility patterns, prefer lower indices
-    sorted_pois = sorted(pois)
-    for s in junctions:
-        for i in range(len(sorted_pois) - 1):
-            p1, p2 = sorted_pois[i], sorted_pois[i+1]
-            # Check if POIs have identical demand from this junction
-            if demand[s][p1] == demand[s][p2]:
-                # Check if they have identical feasibility patterns
-                feasible_hubs_p1 = set(h for h in hubs if feasibility[s][h][p1] > 0)
-                feasible_hubs_p2 = set(h for h in hubs if feasibility[s][h][p2] > 0)
-                if feasible_hubs_p1 == feasible_hubs_p2:
-                    model.addConstr(z[s, p1] >= z[s, p2], name=f"poi_sym_{s}_{i}")
-
     # Objective: Maximize total covered demand via hubs
     objective = gp.quicksum(demand[s][p] * z[s, p]
                            for s in junctions for p in pois)
