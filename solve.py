@@ -100,6 +100,12 @@ def main():
                 model.addConstr(gp.quicksum(x[s, h, p] for h in feasible_hubs) <= 1,
                                name=f"single_assignment_{s}_{p}")
 
+    # Symmetry breaking: order new hubs to eliminate symmetric solutions
+    new_hubs_sorted = sorted(new_hubs, key=lambda h: int(h[1:]))
+    for i in range(len(new_hubs_sorted) - 1):
+        model.addConstr(y[new_hubs_sorted[i]] >= y[new_hubs_sorted[i+1]], 
+                       name=f"sym_break_hubs_{i}")
+
     print(f"      Variables: {model.NumVars:,}")
     print(f"      Constraints: {model.NumConstrs:,}")
     print(f"      Binary variables: {model.NumBinVars:,}")
