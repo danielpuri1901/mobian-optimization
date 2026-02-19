@@ -92,7 +92,7 @@ def main():
 
     # Constraint 3: Demand can only be assigned if hub h is open
     for s, h, p in feasible_assignments:
-        model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}", lazy=1)
+        model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
 
     # Constraint 4: Feasibility constraints no longer needed - variables only created for feasible assignments
 
