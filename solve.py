@@ -93,12 +93,15 @@ def main():
     # Constraint 4: Feasibility constraints now handled by variable creation
 
     # Constraint 5: Each demand from s to p can be assigned to at most one hub
+    # Make constraints lazy for s-p pairs with multiple feasible hubs to reduce LP size
     for s in junctions:
         for p in pois:
             feasible_hubs = [h for h in hubs if (s, h, p) in x]
-            if feasible_hubs:  # Only add constraint if there are feasible hubs
+            if len(feasible_hubs) > 1:  # Multiple hubs: use lazy constraint
                 model.addConstr(gp.quicksum(x[s, h, p] for h in feasible_hubs) <= 1,
-                               name=f"single_assignment_{s}_{p}")
+                               name=f"single_assignment_{s}_{p}", lazy=1)
+            elif len(feasible_hubs) == 1:  # Single hub: constraint automatically satisfied
+                pass  # x[s,h,p] <= 1 is automatic for binary variables
 
     # Symmetry breaking: order new hubs to eliminate symmetric solutions
     new_hubs_sorted = sorted(new_hubs, key=lambda h: int(h[1:]))
