@@ -110,6 +110,8 @@ def main():
     print(f"      Constraints: {model.NumConstrs:,}")
     print(f"      Binary variables: {model.NumBinVars:,}")
     # Gurobi params (auto-tuned by GurobiAgent)
+    model.setParam("Method", 0)
+    # Gurobi params (auto-tuned by GurobiAgent)
     model.setParam("Presolve", 2)
     print()
 
