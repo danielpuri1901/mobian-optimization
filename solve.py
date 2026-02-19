@@ -109,8 +109,18 @@ def main():
     print("[3/3] Solving...")
     print("-" * 60)
 
+    # Set decomposition hints for Benders decomposition
+    # Hub opening variables (y) as master variables
+    for h in hubs:
+        y[h].DecomposeRoles = 1  # Master variable
+    
+    # Assignment variables (x) as subproblem variables  
+    for s, h, p in x:
+        x[s, h, p].DecomposeRoles = 2  # Subproblem variable
+
     # Gurobi params (auto-tuned by GurobiAgent)
     model.setParam("Presolve", 2)
+    model.setParam("Method", 3)  # Enable automatic Benders
     start_time = time.time()
     model.optimize()
     solve_time = time.time() - start_time
