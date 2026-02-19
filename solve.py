@@ -82,6 +82,12 @@ def main():
     # Constraint 2: Ensure all existing hubs are open
     model.addConstr(gp.quicksum(y[h] for h in existing_hubs) == num_existing_hubs,
                    name="existing_hubs_open")
+    
+    # Symmetry breaking: Order new hubs lexicographically
+    # If hubs are identical, prefer lower-indexed ones
+    for i in range(len(new_hubs) - 1):
+        model.addConstr(y[new_hubs[i]] >= y[new_hubs[i + 1]], 
+                       name=f"sym_break_hub_{new_hubs[i]}_{new_hubs[i + 1]}")
 
     # Constraint 3: Demand can only be assigned if hub h is open
     for s in junctions:
