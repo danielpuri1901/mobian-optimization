@@ -111,6 +111,8 @@ def main():
     start_time = time.time()
     # Gurobi Agent: Add MIPFocus=1 to prioritize finding feasible solutions
     model.setParam('MIPFocus', 1)
+    # Gurobi Agent: Enable aggressive presolve
+    model.setParam('Presolve', 2)
     model.optimize()
     solve_time = time.time() - start_time
 
