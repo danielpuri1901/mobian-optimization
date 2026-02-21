@@ -112,6 +112,9 @@ def main():
     # Gurobi Agent: Enable logging and MIPFocus=1
     model.setParam('LogFile', 'gurobi.log')
     model.setParam('MIPFocus', 1)
+    # Gurobi Agent: Enable logging and MIPFocus=1
+    model.setParam('LogFile', 'gurobi.log')
+    model.setParam('MIPFocus', 1)
     model.optimize()
     solve_time = time.time() - start_time
 
