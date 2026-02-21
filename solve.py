@@ -112,6 +112,38 @@ def main():
     # Gurobi Agent: Enable logging and MIPFocus=1
     model.setParam('LogFile', 'gurobi.log')
     model.setParam('MIPFocus', 1)
+    # Gurobi Agent: Enable logging and MIPFocus=1
+    model.setParam('LogFile', 'gurobi.log')
+    model.setParam('MIPFocus', 1)
+    # Gurobi Agent: Add capacity cuts and clique constraints
+    # Valid inequality: strengthen hub capacity relationships
+# If we know the maximum demand any hub can serve, add capacity cuts
+max_demand_per_hub = {}
+for h in hubs:
+    total_demand = sum(demand[s][p] * feasibility[s][h][p] 
+                      for s in junctions for p in pois)
+    max_demand_per_hub[h] = total_demand
+
+# Add capacity-based valid inequalities
+for h in hubs:
+    if max_demand_per_hub[h] > 0:
+        model.addConstr(
+            gp.quicksum(demand[s][p] * x[s, h, p] 
+                       for s in junctions for p in pois) 
+            <= max_demand_per_hub[h] * y[h],
+            name=f"capacity_cut_{h}"
+        )
+
+# Add clique constraints for conflicting assignments
+# For each (s,p) pair, at most one hub can serve it
+for s in junctions:
+    for p in pois:
+        feasible_hubs = [h for h in hubs if feasibility[s][h][p] > 0]
+        if len(feasible_hubs) > 1:
+            model.addConstr(
+                gp.quicksum(x[s, h, p] for h in feasible_hubs) <= 1,
+                name=f"clique_{s}_{p}"
+            )
     model.optimize()
     solve_time = time.time() - start_time
 
