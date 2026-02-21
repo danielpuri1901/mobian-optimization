@@ -113,6 +113,8 @@ def main():
     model.setParam('MIPFocus', 1)
     # Gurobi Agent: Enable aggressive presolve
     model.setParam('Presolve', 2)
+    # Gurobi Agent: Enable aggressive cuts
+    model.setParam('Cuts', 2)
     model.optimize()
     solve_time = time.time() - start_time
 
