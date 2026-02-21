@@ -116,6 +116,12 @@ def main():
     model.setParam('Heuristics', 0.2)  # Spend more time on heuristics
     model.setParam('RINS', 50)  # RINS heuristic frequency
     model.setParam('SubMIPNodes', 200)  # More nodes for sub-MIP heuristics
+    
+    # Enable Benders decomposition - let Gurobi automatically detect structure
+    model.setParam('DecomposeLP', 1)  # Enable LP-based decomposition
+    model.setParam('BendersCutGen', 1)  # Enable Benders cut generation
+    model.setParam('NumericFocus', 1)  # Improve numerical stability for decomposition
+    
     model.optimize()
     solve_time = time.time() - start_time
 
