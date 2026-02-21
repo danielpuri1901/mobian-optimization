@@ -114,6 +114,12 @@ def main():
     model.setParam('MIPFocus', 1)
     # Gurobi Agent: Enable aggressive presolve
     model.setParam('Presolve', 2)
+    # Gurobi Agent: Set high branching priority on hub opening variables
+    # Set branching priorities: hub opening decisions drive the problem structure
+for h in hubs:
+    y[h].BranchPriority = 10
+# Assignment variables get default priority (0)
+print(f"Set branching priorities: {len(hubs)} hub variables with priority 10")
     model.optimize()
     solve_time = time.time() - start_time
 
