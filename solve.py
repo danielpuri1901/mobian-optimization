@@ -112,6 +112,16 @@ def main():
     # Gurobi Agent: Enable logging and MIPFocus=1
     model.setParam('LogFile', 'gurobi.log')
     model.setParam('MIPFocus', 1)
+    # Gurobi Agent: Add symmetry breaking constraints for new hubs
+    # Break symmetry between identical hubs
+# Sort hubs by their ID to ensure consistent ordering
+sorted_hubs = sorted(hubs, key=lambda h: int(h[1:]))
+
+# Add symmetry breaking constraints for new hubs (which are interchangeable)
+sorted_new_hubs = [h for h in sorted_hubs if int(h[1:]) > num_existing_hubs]
+for i in range(len(sorted_new_hubs) - 1):
+    model.addConstr(y[sorted_new_hubs[i]] >= y[sorted_new_hubs[i+1]], 
+                   name=f"sym_break_{i}")
     model.optimize()
     solve_time = time.time() - start_time
 
