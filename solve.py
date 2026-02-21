@@ -83,12 +83,13 @@ def main():
     model.addConstr(gp.quicksum(y[h] for h in existing_hubs) == num_existing_hubs,
                    name="existing_hubs_open")
 
-    # Constraint 3: Demand can only be assigned if hub h is open
+    # Constraint 3: Demand can only be assigned if hub h is open (lazy constraints)
     for s in junctions:
         for h in hubs:
             for p in pois:
                 if (s, h, p) in x:
-                    model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
+                    constr = model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
+                    constr.Lazy = 1
 
     # Constraint 4: No longer needed - only feasible variables are created
 
