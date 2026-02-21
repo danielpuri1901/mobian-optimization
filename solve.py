@@ -115,6 +115,8 @@ def main():
     model.setParam('Presolve', 2)
     # Gurobi Agent: Enable aggressive cuts
     model.setParam('Cuts', 2)
+    # Gurobi Agent: Increase heuristic effort
+    model.setParam('Heuristics', 0.1)
     model.optimize()
     solve_time = time.time() - start_time
 
