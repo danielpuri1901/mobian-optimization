@@ -112,6 +112,10 @@ def main():
     # Gurobi Agent: Enable logging and MIPFocus=1
     model.setParam('LogFile', 'gurobi.log')
     model.setParam('MIPFocus', 1)
+    # Enhanced heuristics for facility location problems
+    model.setParam('Heuristics', 0.2)  # Spend more time on heuristics
+    model.setParam('RINS', 50)  # RINS heuristic frequency
+    model.setParam('SubMIPNodes', 200)  # More nodes for sub-MIP heuristics
     model.optimize()
     solve_time = time.time() - start_time
 
