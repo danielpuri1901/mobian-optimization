@@ -109,9 +109,6 @@ def main():
     print("-" * 60)
 
     start_time = time.time()
-    # Gurobi Agent: Add logging and focus on finding feasible solutions
-    model.setParam('LogFile', 'gurobi.log')
-model.setParam('MIPFocus', 1)
     model.optimize()
     solve_time = time.time() - start_time
 
