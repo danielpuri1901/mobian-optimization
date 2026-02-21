@@ -62,13 +62,6 @@ def main():
         for h in hubs:
             for p in pois:
                 x[s, h, p] = model.addVar(vtype=gp.GRB.BINARY, name=f"x_{s}_{h}_{p}")
-    
-    # New variables: u_h = total demand served by hub h (continuous for better LP relaxation)
-    u = {}
-    for h in hubs:
-        # Upper bound based on maximum possible demand through this hub
-        max_demand_h = sum(demand[s][p] for s in junctions for p in pois if feasibility[s][h][p] == 1)
-        u[h] = model.addVar(vtype=gp.GRB.CONTINUOUS, lb=0, ub=max_demand_h, name=f"u_{h}")
 
     # Objective: Maximize total covered demand via hubs
     objective = gp.quicksum(demand[s][p] * x[s, h, p]
@@ -105,17 +98,6 @@ def main():
         for p in pois:
             model.addConstr(gp.quicksum(x[s, h, p] for h in hubs) <= 1,
                            name=f"single_assignment_{s}_{p}")
-    
-    # New constraint: Link hub utilization variables to assignment variables
-    for h in hubs:
-        model.addConstr(u[h] == gp.quicksum(demand[s][p] * x[s, h, p] 
-                                           for s in junctions for p in pois),
-                       name=f"hub_utilization_{h}")
-    
-    # New constraint: Hub utilization capacity (helps with branching and cuts)
-    for h in hubs:
-        max_capacity = sum(demand[s][p] for s in junctions for p in pois if feasibility[s][h][p] == 1)
-        model.addConstr(u[h] <= max_capacity * y[h], name=f"hub_capacity_{h}")
 
     print(f"      Variables: {model.NumVars:,}")
     print(f"      Constraints: {model.NumConstrs:,}")
