@@ -109,9 +109,13 @@ def main():
     print("-" * 60)
 
     start_time = time.time()
-    # Gurobi Agent: Enable logging and MIPFocus=1
+    # Gurobi Agent: Enable logging and optimized parameters for facility location
     model.setParam('LogFile', 'gurobi.log')
     model.setParam('MIPFocus', 1)
+    model.setParam('Cuts', 2)  # Aggressive cutting planes
+    model.setParam('Presolve', 2)  # Aggressive presolve
+    model.setParam('Heuristics', 0.1)  # Spend more time on heuristics early
+    model.setParam('VarBranch', 3)  # Strong branching for better variable selection
     model.optimize()
     solve_time = time.time() - start_time
 
