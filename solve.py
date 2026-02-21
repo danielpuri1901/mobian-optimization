@@ -112,6 +112,12 @@ def main():
     # Gurobi Agent: Enable logging and MIPFocus=1
     model.setParam('LogFile', 'gurobi.log')
     model.setParam('MIPFocus', 1)
+    
+    # Enable Benders decomposition to exploit problem structure
+    # The model naturally decomposes into hub opening (master) and assignment (sub)
+    model.setParam('DecomposeAlgorithm', 1)  # Enable automatic Benders
+    model.setParam('Method', -1)  # Auto method with decomposition priority
+    
     model.optimize()
     solve_time = time.time() - start_time
 
