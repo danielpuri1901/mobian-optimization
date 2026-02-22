@@ -98,14 +98,6 @@ def main():
             model.addConstr(gp.quicksum(x[s, h, p] for h in hubs if (s, h, p) in x) <= 1,
                            name=f"single_assignment_{s}_{p}")
 
-    # Valid inequality: Total assignments cannot exceed total hub capacity
-    # This strengthens the LP relaxation by bounding total hub utilization
-    max_assignments = len(junctions) * len(pois)  # Upper bound on total assignments
-    total_possible_hubs = num_existing_hubs + max_new_hubs
-    model.addConstr(gp.quicksum(x[s, h, p] for s in junctions for h in hubs for p in pois if (s, h, p) in x) 
-                   <= max_assignments * total_possible_hubs / len(hubs),
-                   name="aggregate_capacity_bound")
-
     print(f"      Variables: {model.NumVars:,}")
     print(f"      Constraints: {model.NumConstrs:,}")
     print(f"      Binary variables: {model.NumBinVars:,}")
