@@ -83,12 +83,12 @@ def main():
     model.addConstr(gp.quicksum(y[h] for h in existing_hubs) == num_existing_hubs,
                    name="existing_hubs_open")
 
-    # Constraint 3: Demand can only be assigned if hub h is open
-    for s in junctions:
-        for h in hubs:
-            for p in pois:
-                if (s, h, p) in x:
-                    model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
+    # Constraint 3: Demand can only be assigned if hub h is open (aggregated)
+    for h in hubs:
+        assignments_using_h = [x[s, h, p] for s in junctions for p in pois if (s, h, p) in x]
+        if assignments_using_h:
+            model.addConstr(gp.quicksum(assignments_using_h) <= len(assignments_using_h) * y[h], 
+                           name=f"hub_open_aggregate_{h}")
 
     # Constraint 4: Prevent infeasible assignments - now handled by variable creation
 
