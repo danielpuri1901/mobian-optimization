@@ -98,6 +98,15 @@ def main():
             model.addConstr(gp.quicksum(x[s, h, p] for h in hubs if (s, h, p) in x) <= 1,
                            name=f"single_assignment_{s}_{p}")
 
+    # Valid inequality: Hub utilization bounds - strengthen LP relaxation
+    for h in hubs:
+        max_hub_demand = sum(demand[s][p] for s in junctions for p in pois if (s, h, p) in x)
+        if max_hub_demand > 0:
+            model.addConstr(gp.quicksum(demand[s][p] * x[s, h, p] 
+                                       for s in junctions for p in pois if (s, h, p) in x) 
+                           <= max_hub_demand * y[h],
+                           name=f"hub_utilization_{h}")
+
     print(f"      Variables: {model.NumVars:,}")
     print(f"      Constraints: {model.NumConstrs:,}")
     print(f"      Binary variables: {model.NumBinVars:,}")
