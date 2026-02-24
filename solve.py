@@ -56,16 +56,15 @@ def main():
     for h in hubs:
         y[h] = model.addVar(vtype=gp.GRB.BINARY, name=f"y_{h}")
 
-    # Variables: x_{shp} = 1 if demand from junction s to POI p is assigned via hub h
-    x = {}
+    # Variables: z[s,p] = 1 if demand from junction s to POI p is served by any hub
+    z = {}
     for s in junctions:
-        for h in hubs:
-            for p in pois:
-                x[s, h, p] = model.addVar(vtype=gp.GRB.BINARY, name=f"x_{s}_{h}_{p}")
+        for p in pois:
+            z[s, p] = model.addVar(vtype=gp.GRB.BINARY, name=f"z_{s}_{p}")
 
     # Objective: Maximize total covered demand via hubs
-    objective = gp.quicksum(demand[s][p] * x[s, h, p]
-                           for s in junctions for h in hubs for p in pois)
+    objective = gp.quicksum(demand[s][p] * z[s, p]
+                           for s in junctions for p in pois)
     model.setObjective(objective, gp.GRB.MAXIMIZE)
 
     # Constraint 1: Limit the number of new hubs opened
@@ -76,34 +75,31 @@ def main():
     model.addConstr(gp.quicksum(y[h] for h in new_hubs) <= max_new_hubs,
                    name="max_new_hubs")
 
+    # Symmetry breaking: force lexicographic ordering on new hub opening decisions
+    sorted_new_hubs = sorted(new_hubs, key=lambda h: int(h[1:]))
+    for i in range(len(sorted_new_hubs) - 1):
+        model.addConstr(y[sorted_new_hubs[i]] >= y[sorted_new_hubs[i+1]], 
+                       name=f"sym_break_{i}")
+
     # Constraint 2: Ensure all existing hubs are open
     model.addConstr(gp.quicksum(y[h] for h in existing_hubs) == num_existing_hubs,
                    name="existing_hubs_open")
 
-    # Constraint 3: Demand can only be assigned if hub h is open
-    for s in junctions:
-        for h in hubs:
-            for p in pois:
-                model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
-
-    # Constraint 4: Prevent infeasible assignments (based on time/distance constraints)
-    for s in junctions:
-        for h in hubs:
-            for p in pois:
-                model.addConstr(x[s, h, p] <= feasibility[s][h][p],
-                               name=f"feasibility_{s}_{h}_{p}")
-
-    # Constraint 5: Each demand from s to p can be assigned to at most one hub
+    # Constraint 3: Demand can only be served if at least one feasible hub is open
     for s in junctions:
         for p in pois:
-            model.addConstr(gp.quicksum(x[s, h, p] for h in hubs) <= 1,
-                           name=f"single_assignment_{s}_{p}")
+            feasible_hubs_sp = [h for h in hubs if feasibility[s][h][p] > 0]
+            if feasible_hubs_sp:  # Only add constraint if there are feasible hubs for this s,p
+                model.addConstr(z[s, p] <= gp.quicksum(y[h] for h in feasible_hubs_sp),
+                               name=f"serve_if_hub_open_{s}_{p}")
 
     print(f"      Variables: {model.NumVars:,}")
     print(f"      Constraints: {model.NumConstrs:,}")
     print(f"      Binary variables: {model.NumBinVars:,}")
     print()
 
+    # Gurobi params (auto-tuned by GurobiAgent)
+    model.setParam("Method", 0)
     # Solve
     print("[3/3] Solving...")
     print("-" * 60)
