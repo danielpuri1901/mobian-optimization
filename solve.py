@@ -47,29 +47,32 @@ def main():
     print(f"      Max new hubs: {max_new_hubs}")
     print()
 
+    # Pre-filter: only create variables for feasible (s,h,p) assignments
+    feasible_arcs = []
+    for s in junctions:
+        for h in hubs:
+            for p in pois:
+                if feasibility[s][h][p]:
+                    feasible_arcs.append((s, h, p))
+
+    print(f"      Feasible arcs: {len(feasible_arcs):,} / {len(junctions)*len(hubs)*len(pois):,}")
+
     # Build model
     print("[2/3] Building optimization model...")
     model = gp.Model("Mobian_HubLocation")
 
     # Variables: y_h = 1 if hub h is opened
-    y = {}
-    for h in hubs:
-        y[h] = model.addVar(vtype=gp.GRB.BINARY, name=f"y_{h}")
+    y = model.addVars(hubs, vtype=gp.GRB.BINARY, name="y")
 
-    # Variables: x_{shp} = 1 if demand from junction s to POI p is assigned via hub h
-    x = {}
-    for s in junctions:
-        for h in hubs:
-            for p in pois:
-                x[s, h, p] = model.addVar(vtype=gp.GRB.BINARY, name=f"x_{s}_{h}_{p}")
+    # Variables: x_{shp} — continuous [0,1] since integrality is implied by y
+    x = model.addVars(feasible_arcs, vtype=gp.GRB.CONTINUOUS, name="x")
 
     # Objective: Maximize total covered demand via hubs
-    objective = gp.quicksum(demand[s][p] * x[s, h, p]
-                           for s in junctions for h in hubs for p in pois)
-    model.setObjective(objective, gp.GRB.MAXIMIZE)
+    model.setObjective(
+        gp.quicksum(demand[s][p] * x[s, h, p] for s, h, p in feasible_arcs),
+        gp.GRB.MAXIMIZE)
 
     # Constraint 1: Limit the number of new hubs opened
-    # Hub IDs are like "h1", "h2", etc. - extract number to determine if existing
     new_hubs = [h for h in hubs if int(h[1:]) > num_existing_hubs]
     existing_hubs = [h for h in hubs if int(h[1:]) <= num_existing_hubs]
 
@@ -81,24 +84,20 @@ def main():
                    name="existing_hubs_open")
 
     # Constraint 3: Demand can only be assigned if hub h is open
-    for s in junctions:
-        for h in hubs:
-            for p in pois:
-                model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
-
-    # Constraint 4: Prevent infeasible assignments (based on time/distance constraints)
-    for s in junctions:
-        for h in hubs:
-            for p in pois:
-                model.addConstr(x[s, h, p] <= feasibility[s][h][p],
-                               name=f"feasibility_{s}_{h}_{p}")
+    model.addConstrs(
+        (x[s, h, p] <= y[h] for s, h, p in feasible_arcs),
+        name="hub_open")
 
     # Constraint 5: Each demand from s to p can be assigned to at most one hub
-    for s in junctions:
-        for p in pois:
-            model.addConstr(gp.quicksum(x[s, h, p] for h in hubs) <= 1,
-                           name=f"single_assignment_{s}_{p}")
+    # Build index of feasible hubs per (s, p) pair
+    sp_hubs = {}
+    for s, h, p in feasible_arcs:
+        sp_hubs.setdefault((s, p), []).append(h)
 
+    for (s, p), h_list in sp_hubs.items():
+        model.addConstr(gp.quicksum(x[s, h, p] for h in h_list) <= 1)
+
+    model.update()
     print(f"      Variables: {model.NumVars:,}")
     print(f"      Constraints: {model.NumConstrs:,}")
     print(f"      Binary variables: {model.NumBinVars:,}")
@@ -109,7 +108,6 @@ def main():
     print("-" * 60)
 
     start_time = time.time()
-    # Gurobi Agent: Enable logging and MIPFocus=1
     model.setParam('LogFile', 'gurobi.log')
     model.setParam('MIPFocus', 1)
     model.optimize()
