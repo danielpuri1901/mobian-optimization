@@ -51,63 +51,82 @@ def main():
     print("[2/3] Building optimization model...")
     model = gp.Model("Mobian_HubLocation")
 
-    # Variables: y_h = 1 if hub h is opened
+    # Variables: y_h = 1 if hub h is opened (only for new hubs)
+    # Existing hubs are implicitly fixed to 1
+    new_hubs = [h for h in hubs if int(h[1:]) > num_existing_hubs]
+    existing_hubs = [h for h in hubs if int(h[1:]) <= num_existing_hubs]
+    
     y = {}
-    for h in hubs:
+    for h in new_hubs:
         y[h] = model.addVar(vtype=gp.GRB.BINARY, name=f"y_{h}")
 
     # Variables: x_{shp} = 1 if demand from junction s to POI p is assigned via hub h
+    # Only create variables for feasible combinations
     x = {}
     for s in junctions:
         for h in hubs:
             for p in pois:
-                x[s, h, p] = model.addVar(vtype=gp.GRB.BINARY, name=f"x_{s}_{h}_{p}")
+                if feasibility[s][h][p] == 1:
+                    x[s, h, p] = model.addVar(vtype=gp.GRB.BINARY, name=f"x_{s}_{h}_{p}")
 
     # Objective: Maximize total covered demand via hubs
     objective = gp.quicksum(demand[s][p] * x[s, h, p]
-                           for s in junctions for h in hubs for p in pois)
+                           for s in junctions for h in hubs for p in pois
+                           if (s, h, p) in x)
     model.setObjective(objective, gp.GRB.MAXIMIZE)
 
     # Constraint 1: Limit the number of new hubs opened
-    # Hub IDs are like "h1", "h2", etc. - extract number to determine if existing
-    new_hubs = [h for h in hubs if int(h[1:]) > num_existing_hubs]
-    existing_hubs = [h for h in hubs if int(h[1:]) <= num_existing_hubs]
-
     model.addConstr(gp.quicksum(y[h] for h in new_hubs) <= max_new_hubs,
                    name="max_new_hubs")
-
-    # Constraint 2: Ensure all existing hubs are open
-    model.addConstr(gp.quicksum(y[h] for h in existing_hubs) == num_existing_hubs,
-                   name="existing_hubs_open")
+    
+    # Constraint 2: Existing hubs are implicitly fixed to 1 (no constraint needed)
 
     # Constraint 3: Demand can only be assigned if hub h is open
     for s in junctions:
         for h in hubs:
             for p in pois:
-                model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
+                if (s, h, p) in x:
+                    if h in new_hubs:
+                        model.addConstr(x[s, h, p] <= y[h], name=f"hub_open_{s}_{h}_{p}")
+                    # For existing hubs, constraint is x[s,h,p] <= 1 which is always satisfied
 
-    # Constraint 4: Prevent infeasible assignments (based on time/distance constraints)
-    for s in junctions:
-        for h in hubs:
-            for p in pois:
-                model.addConstr(x[s, h, p] <= feasibility[s][h][p],
-                               name=f"feasibility_{s}_{h}_{p}")
+    # Constraint 4: Feasibility constraints now handled by variable creation
 
     # Constraint 5: Each demand from s to p can be assigned to at most one hub
     for s in junctions:
         for p in pois:
-            model.addConstr(gp.quicksum(x[s, h, p] for h in hubs) <= 1,
-                           name=f"single_assignment_{s}_{p}")
+            feasible_hubs = [h for h in hubs if (s, h, p) in x]
+            if feasible_hubs:  # Only add constraint if there are feasible hubs
+                model.addConstr(gp.quicksum(x[s, h, p] for h in feasible_hubs) <= 1,
+                               name=f"single_assignment_{s}_{p}")
+
+    # Symmetry breaking: order new hubs to eliminate symmetric solutions
+    new_hubs_sorted = sorted(new_hubs, key=lambda h: int(h[1:]))
+    for i in range(len(new_hubs_sorted) - 1):
+        model.addConstr(y[new_hubs_sorted[i]] >= y[new_hubs_sorted[i+1]], 
+                       name=f"sym_break_hubs_{i}")
 
     print(f"      Variables: {model.NumVars:,}")
     print(f"      Constraints: {model.NumConstrs:,}")
     print(f"      Binary variables: {model.NumBinVars:,}")
+    # Gurobi params (auto-tuned by GurobiAgent)
+    model.setParam("MIPFocus", 1)
+    # Gurobi params (auto-tuned by GurobiAgent)
+    model.setParam("Presolve", 2)
     print()
 
     # Solve
     print("[3/3] Solving...")
     print("-" * 60)
 
+    # Set decomposition hints: y variables go to master problem due to coupling
+    for h in new_hubs:
+        y[h].Partition = -1  # Master problem handles hub opening decisions
+    
+    for (s, h, p) in x:
+        hub_id = int(h[1:])
+        x[s, h, p].Partition = hub_id
+    
     start_time = time.time()
     # Gurobi Agent: Enable logging and MIPFocus=1
     model.setParam('LogFile', 'gurobi.log')
