@@ -4,7 +4,16 @@ A large-scale MILP for siting Park & Bike (P&B) hubs around a city: pick which h
 
 **Scale:** 80 hubs × 70 highway junctions × 120 POIs → ~672,000 binary assignment variables. Solved with Gurobi (`MIPFocus=1`).
 
-> Built by [Daniel Puri](https://github.com/danielpuri1901) as one of three MILP test problems used to design the eval harness for **[`optimaze-agent`](https://github.com/danielpuri1901/optimaze-agent)** — my open-source Gurobi auto-tuner (received an acquisition offer from Gurobi, declined). The other two test problems are [`uber-network-routing-demo`](https://github.com/danielpuri1901/uber-network-routing-demo) and [`timor-leste-healthcare`](https://github.com/danielpuri1901/timor-leste-healthcare).
+## Accomplishments
+
+Built by [Daniel Puri](https://github.com/danielpuri1901) as one of three MILP test problems used to design the eval harness for [`optimaze-agent`](https://github.com/danielpuri1901/optimaze-agent) — my open-source Gurobi auto-tuner.
+
+- Drives an **automated eval harness** that benchmarks tuning recommendations against the MIPLIB suite — solve time, optimality gap, branch-and-bound nodes
+- Helped optimaze achieve **up to 85% peak / 20–50% typical solve-time improvement** vs. default Gurobi configurations
+- Optimaze was **presented to Gurobi's optimization team** and **received an acquisition offer (declined)**
+- Distributed as a public **PyPI package** — [`optimaze`](https://pypi.org/project/optimaze/)
+
+The other two test problems are [`uber-network-routing-demo`](https://github.com/danielpuri1901/uber-network-routing-demo) and [`timor-leste-healthcare`](https://github.com/danielpuri1901/timor-leste-healthcare).
 
 ## Problem
 
